@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+START=65
+
+boot() {
+	insmod /lib/ufsd/ufsd.ko
+	#wait for zcip(Auto-IP) get LAN address finish ... Because hotpulg will call minidlna which needs a fixed IP address
+	if [ "$(/bin/config get lan_ip_dynam)" = "1" ]; then
+		sleep 18
+	fi
+
+	#mkdir /tmp/mnt
+	#ln -sf /mnt /tmp/mnt
+	mount -t sysfs sysfs /sys
+	/usr/sbin/net-disk
+	#hotplug2 --persistent --coldplug &
+
+	#power on USB socket
+	echo 1 > /proc/simple_config/usb5v
+}

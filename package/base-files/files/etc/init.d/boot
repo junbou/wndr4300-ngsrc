@@ -1,0 +1,292 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=10
+
+system_config() {
+	local cfg="$1"
+
+	local hostname conloglevel timezone
+
+	config_get hostname "$cfg" hostname 'OpenWrt'
+	echo "$hostname" > /proc/sys/kernel/hostname
+
+	config_get conloglevel "$cfg" conloglevel
+	config_get buffersize "$cfg" buffersize
+	[ -z "$conloglevel" -a -z "$buffersize" ] || dmesg ${conloglevel:+-n $conloglevel} ${buffersize:+-s $buffersize}
+	
+	config_get timezone "$cfg" timezone 'UTC'
+	echo "$timezone" > /tmp/TZ
+
+	#if [ -x /sbin/syslogd ]; then
+	#	local log_ip log_size log_port log_type log_file
+	#	config_get log_ip "$cfg" log_ip 
+	#	config_get log_size "$cfg" log_size 16
+	#	config_get log_port "$cfg" log_port 514
+	#	config_get log_type "$cfg" log_type circular
+	#	config_get log_file "$cfg" log_file "/var/log/messages"
+	#	if [ "$log_type" = "file" ]; then
+	#		syslogd -s $log_size -O $log_file ${log_ip:+-L -R ${log_ip}:${log_port}} -S
+	#	else
+	#		syslogd -C${log_size} ${log_ip:+-L -R ${log_ip}:${log_port}}
+	#	fi
+	#fi
+	config_get klogconloglevel "$cfg" klogconloglevel
+	[ -x /sbin/klogd ] && klogd ${klogconloglevel:+-c $klogconloglevel}
+}
+
+apply_uci_config() {(
+	include /lib/config
+	uci_apply_defaults
+)}
+
+start() {
+	[ -f /proc/mounts ] || /sbin/mount_root
+	[ -f /proc/jffs2_bbc ] && echo "S" > /proc/jffs2_bbc
+	[ -f /proc/net/vlan/config ] && vconfig set_name_type DEV_PLUS_VID_NO_PAD
+
+	apply_uci_config
+	config_load system
+	config_foreach system_config system
+	
+	mkdir -p /var/run
+	mkdir -p /var/log
+	mkdir -p /var/lock
+	mkdir -p /var/state
+	mkdir -p /tmp/.uci
+	chmod 0700 /tmp/.uci
+	touch /var/log/wtmp
+	touch /var/log/lastlog
+	touch /tmp/resolv.conf.auto
+	ln -sf /tmp/resolv.conf.auto /tmp/resolv.conf
+	mkdir -p /tmp/mnt
+	[ "$FAILSAFE" = "true" ] && touch /tmp/.failsafe
+
+	killall -q hotplug2
+	[ -x /sbin/hotplug2 ] && /sbin/hotplug2 --override --persistent \
+			--set-worker /lib/hotplug2/worker_fork.so \
+			--set-rules-file /etc/hotplug2.rules \
+			--max-children 1 >/dev/null 2>&1 &
+
+	# the coldplugging of network interfaces needs to happen later, so we do it manually here
+	for iface in $(awk -F: '/:/ {print $1}' /proc/net/dev); do
+		/usr/bin/env -i ACTION=add INTERFACE="$iface" /sbin/hotplug-call net
+	done
+
+	# create /dev/root if it doesn't exist
+	[ -e /dev/root ] || {
+		rootdev=$(awk 'BEGIN { RS=" "; FS="="; } $1 == "root" { print $2 }' < /proc/cmdline)
+		[ -n "$rootdev" ] && ln -s "$rootdev" /dev/root
+	}
+
+	/bin/datalib
+	/sbin/printhosts
+	/sbin/checkart
+
+	load_modules /etc/modules.d/*
+
+
+	# process user commands
+	[ -f /etc/rc.local ] && {
+		sh /etc/rc.local
+	}
+
+	[ `/bin/config get endis_ipv6_logo_test` = "1" ] && /bin/config set wan_endis_rspToPing=1
+	#set ipv6 proc file
+	/etc/net6conf/6proc start
+
+	# generate the firewall rule file after loading the configuration data.
+	/usr/sbin/net-wall rule
+
+	# start SIP ALG module
+	/sbin/cmd_sipalg
+
+	# indicate the system first boot for first log
+	/bin/config set syslog_up_first=0
+
+	# support TUN interface
+	mkdir /dev/net
+	mknod /dev/net/tun c 10 200
+	chmod 0700 /dev/net/tun
+
+	# Load Default QoS rules if needed.
+	qos_dft="$(/bin/config get qos_list_default)"
+	if [ "$qos_dft" = "1" ]; then
+		count=1
+		while :
+		do
+			qos_rule="$(/bin/config get qos_dft_list$count)"
+			if [ "x$qos_rule" = "x" ]; then
+				break;
+			fi
+			/bin/config set qos_list$count="$qos_rule"
+
+			count=`expr $count + 1`
+		done
+
+		count=`expr $count - 1`
+		echo "$count QoS default rules are Loaded!"
+
+		/bin/config set qos_list_default="0"
+		/bin/config commit
+		fi
+
+	#read serial number from flash to /tmp/Seria_Number
+	/sbin/artmtd -r sn
+	#read wan mac from flash to /tmp/wan_mac
+	/sbin/artmtd -r mac
+	#read hw id from flash to /tmp/hw_id
+	/sbin/artmtd -r board_hw_id | cut -f 2 -d ':' > /tmp/hw_id
+	#read model id from flash to /tmp/model_id
+	/sbin/artmtd -r board_model_id | cut -f 2 -d ":" > /tmp/model_id
+	#if restore the factory default read region from flash
+	if [ "x$(/bin/config get board_region_default)" = "x1" ]; then
+		region="$(/sbin/artmtd -r region | grep REGION | awk '{print $2}')"
+
+		#when region setting on flash's board data area is RU
+		if [ "$region" = "RU" ];then
+			/bin/config set wla_country="19"
+			/bin/config set wl_country="19"
+			/bin/config set ntp_server="GMT-4"
+			/bin/config set ntpserver_select="GMT-4"
+			/bin/config set ntp_hidden_select="26"
+			/bin/config set time_zone="GMT-4"
+			/bin/config set email_ntpserver="GMT-4"
+			/bin/config set region_flag="DISABLED"
+		fi
+
+		#when region setting on flash's board data area is GR
+		if [ "$region" = "GR" ];then
+			/bin/config set wla_country="4"
+			/bin/config set wl_country="4"
+			/bin/config set ntp_server="GMT-1"
+			/bin/config set ntpserver_select="GMT-1"
+			/bin/config set ntp_hidden_select="18"
+			/bin/config set time_zone="GMT-1"
+			/bin/config set email_ntpserver="GMT-1"
+		fi
+
+		#when region setting on flash's board data area is PR
+		if [ "$region" = "PR" ];then
+			/bin/config set wla_country="11"
+			/bin/config set wl_country="11"
+			/bin/config set ntp_server="GMT-8"
+			/bin/config set ntpserver_select="GMT-8"
+			/bin/config set ntp_hidden_select="32"
+			/bin/config set time_zone="GMT-8"
+			/bin/config set email_ntpserver="GMT-8"
+			/bin/config set wla_hidden_channel="153"
+			/bin/config set wla_channel="153"
+		fi
+
+		#when region setting on flash's board data area is BZ
+		if [ "$region" = "BZ" ];then
+			/bin/config set wla_country="9"
+			/bin/config set wl_country="9"
+			/bin/config set ntp_server="GMT+3"
+			/bin/config set ntpserver_select="GMT+3"
+			/bin/config set ntp_hidden_select="13"
+			/bin/config set time_zone="GMT+3"
+			/bin/config set email_ntpserver="GMT+3"
+			/bin/config set wla_hidden_channel="153"
+			/bin/config set wla_channel="153"
+		fi
+
+		#when region setting on flash's board data area is IN
+		if [ "$region" = "IN" ];then
+			/bin/config set wla_country="12"
+			/bin/config set wl_country="12"
+			/bin/config set ntp_server="GMT-5:30"
+			/bin/config set ntpserver_select="GMT-5:30"
+			/bin/config set ntp_hidden_select="29"
+			/bin/config set time_zone="GMT-5:30"
+			/bin/config set email_ntpserver="GMT-5:30"
+			/bin/config set wla_hidden_channel="153"
+			/bin/config set wla_channel="153"
+		fi
+
+		#when region setting on flash's board data area is KO
+		if [ "$region" = "KO" ];then
+			/bin/config set wla_country="7"
+			/bin/config set wl_country="7"
+			/bin/config set ntp_server="GMT-9"
+			/bin/config set ntpserver_select="GMT-9"
+			/bin/config set ntp_hidden_select="34"
+			/bin/config set time_zone="GMT-9"
+			/bin/config set email_ntpserver="GMT-9"
+			/bin/config set wla_hidden_channel="153"
+			/bin/config set wla_channel="153"
+		fi
+
+		#when region setting on flash's board data area is JP
+		if [ "$region" = "JP" ];then
+			/bin/config set wla_country="6"
+			/bin/config set wl_country="6"
+			/bin/config set ntp_server="GMT-9"
+			/bin/config set ntpserver_select="GMT-9"
+			/bin/config set ntp_hidden_select="34"
+			/bin/config set time_zone="GMT-9"
+			/bin/config set email_ntpserver="GMT-9"
+			/bin/config set region_flag="DISABLED"
+		fi
+
+		#when region setting on flash's board data area is NA
+		if [ "$region" = "NA" ];then
+			/bin/config set wla_country="10"
+			/bin/config set wl_country="10"
+			/bin/config set region_flag="DISABLED"
+			/bin/config set ntp_server="GMT+8"
+			/bin/config set ntpserver_select="GMT+8"
+			/bin/config set ntp_hidden_select="4"
+			/bin/config set time_zone="GMT+8"
+			/bin/config set email_ntpserver="GMT+8"
+			/bin/config set wla_hidden_channel="153"
+			/bin/config set wla_channel="153"
+		fi
+		#when region setting on flash's board data area is AU
+		if [ "$region" = "AU" ];then
+			/bin/config set wla_country="2"
+			/bin/config set wl_country="2"
+			/bin/config set ntp_server="GMT-10"
+			/bin/config set ntpserver_select="GMT-10"
+			/bin/config set ntp_hidden_select="35"
+			/bin/config set time_zone="GMT-10"
+			/bin/config set email_ntpserver="GMT-10"
+			/bin/config set wla_hidden_channel="153"
+			/bin/config set wla_channel="153"
+		fi
+
+		/bin/config set board_region_default="0"
+		/bin/config commit
+	fi
+
+	# Wireless security pre-set
+	id_dft="$(/bin/config get default_ssphrase)"
+	if [ "$id_dft" = "1" ]; then
+		/sbin/artmtd -r ssid
+		/sbin/artmtd -r passphrase
+
+		if [ -s /tmp/ssid-setted ] && [ -s /tmp/passphrase-setted ]; then
+			id_set=$(awk '{print $1}' /tmp/ssid-setted)
+			ps_set=$(awk '{print $1}' /tmp/passphrase-setted)
+
+			/bin/config set wl_ssid="$id_set"
+			/bin/config set wla_ssid="$id_set-5G"
+			/bin/config set wl_wpa2_psk="$ps_set"
+			/bin/config set wla_wpa2_psk="$ps_set"
+			/bin/config set wl_sectype="4"
+			/bin/config set wla_sectype="4"
+			/bin/config set wps_status="5"
+			/bin/config set wla_wps_status="5"
+
+			# set SSID of guest netwroks according to Home Router GUI Redesign Specification Rev10 section 6.3
+			/bin/config set wlg1_ssid="NETGEAR-Guest"
+			/bin/config set wla1_ssid="NETGEAR-5G-Guest"
+		fi
+
+		/bin/config set default_ssphrase="0"
+		/bin/config commit
+	fi
+
+	[ "x$(/bin/config get factory_mode)" = "x1" ] && touch /tmp/factory_test
+}

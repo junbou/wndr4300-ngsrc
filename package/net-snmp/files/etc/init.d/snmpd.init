@@ -1,0 +1,21 @@
+#!/bin/sh /etc/rc.common
+START=60
+
+RCDLINKS="2,S98 3,S98 4,S98 5,S98 0,K19 1,K19,K19"
+
+start() {
+	echo -n "Starting snmpd:"
+	/usr/sbin/snmpd -c /etc/snmp/snmpd.conf -P /tmp/snmpd.pid 2>/dev/null
+	echo "."
+}
+
+stop() {
+	echo -n "Stopping snmpd:"
+	killall snmpd
+	echo "."
+}
+
+restart() {
+	stop
+	start	
+}

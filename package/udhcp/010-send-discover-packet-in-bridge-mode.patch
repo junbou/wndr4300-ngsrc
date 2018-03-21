@@ -1,0 +1,58 @@
+diff -uNr udhcp.org/dhcpc.c udhcp/dhcpc.c
+--- udhcp.org/dhcpc.c	2014-03-05 19:15:01.198389471 +0800
++++ udhcp/dhcpc.c	2014-03-05 19:17:45.018389270 +0800
+@@ -263,6 +263,27 @@
+ 	return link_up;
+ }
+ 
++#define BR_MODE_ENABLE  "/tmp/enable_br_mode"
++
++static inline int br_mode_enable(void)
++{
++        char value;
++        int fd, enable;
++
++        fd = open(BR_MODE_ENABLE, O_RDONLY, 0666);
++        if (fd < 0)
++                return 0;
++
++        if (read(fd, &value, 1) == 1 && value == '1')
++                enable = 1;
++        else
++                enable = 0;
++
++        close(fd);
++
++        return enable;
++}
++
+ /*
+  * return:
+  *     1  addr free
+@@ -490,7 +511,7 @@
+ 					 * whether WAN cable is plugged. If WAN cable is not plugged, the discovery
+ 					 * packet should not be sent.
+ 					 */
+-					if (!eth_up()) {
++					if (!eth_up() && !br_mode_enable()) {
+ 						if (client_config.background_if_no_lease && !client_config.foreground)
+ 							background();
+ 
+@@ -509,7 +530,7 @@
+ 					/* send discover packet */
+ 					send_discover(xid, requested_ip); /* broadcast */
+ 					
+-					timeout = now + ((packet_num == 2) ? 4 : 2);
++					timeout = now + (br_mode_enable ? 5 : ((packet_num == 2) ? 4 : 2));
+ 					packet_num++;
+ 				} else {
+ 					/* If forked, don't fork again. */
+@@ -535,7 +556,7 @@
+ 					 * A device that has auto-configured an IP address MUST periodically check 
+ 					 * every 4 minutes for the existence of a DHCP server.
+ 					 */
+-					timeout = now + (client_config.apmode ? 240 : 10);
++					timeout = now + (client_config.apmode ? (!br_mode_enable() ? 240 : 120) : 10);
+ 				}
+ 				break;
+ 			case RENEW_REQUESTED:

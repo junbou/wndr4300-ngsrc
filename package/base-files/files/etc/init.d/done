@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=95
+boot() {
+	[ -d /tmp/root ] && {
+		lock /tmp/.switch2jffs
+		firstboot switch2jffs
+		lock -u /tmp/.switch2jffs
+	}
+
+	# set leds to normal state
+	. /etc/diag.sh
+	set_state done
+
+	#Enable kernel configure for Igmp Snooping
+	echo 1 > /proc/igmpsnoop
+
+	mm 0xb8070000 0x00000001
+}

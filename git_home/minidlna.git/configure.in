@@ -1,0 +1,37 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_INIT(Makefile)
+AC_CONFIG_HEADER(config.h)
+
+# Checks for programs.
+
+# Checks for libraries.
+
+# Checks for header files.
+
+# Checks for typedefs, structures, and compiler characteristics.
+
+# Checks for library functions.
+
+AC_ARG_WITH(model_name,
+	[AC_HELP_STRING(
+		[--with-model_name="model name"],
+		[Specify the DLNA model name for the router, such as "Windows Media Connect compatible (NETGEAR WNDR3800)"])
+	],
+	if test x"$withval" = xyes || test x"$withval" = x ; then
+		AC_MSG_ERROR([Must specify some value for --with-model_name option!])
+	else
+		AC_DEFINE_UNQUOTED(ROOTDEV_MODELNAME, "$withval", [Router's DLNA model name, such as "Windows Media Connect compatible (NETGEAR WNDR3800)"])
+	fi
+)
+
+DEFAULT_MODELNAME="Windows Media Connect compatible (ReadyDLNA)"
+if test "${with_model_name+set}" != set; then
+	AC_DEFINE_UNQUOTED(ROOTDEV_MODELNAME, "$DEFAULT_MODELNAME")
+fi
+
+echo "creating cmddlna"
+cp cmddlna.in cmddlna
+
+AC_OUTPUT

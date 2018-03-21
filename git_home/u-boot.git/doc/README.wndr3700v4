@@ -1,0 +1,77 @@
+GIT repository:
+===============
+
+git://itgserver/pub/scm/boot/u-boot/changcs/u-boot.git
+dni branch
+
+How to build:
+=============
+#
+# Normal u-boot without using LSDK
+#
+$ export PATH="$PATH:/your/toolchain/path"
+$ UBOOT_GCC_4_3_3_EXTRA_CFLAGS="-fPIC" make hw29763948p128p128_config V=1
+$ UBOOT_GCC_4_3_3_EXTRA_CFLAGS="-fPIC" OBJS=cpu/mips/start_hw29763948p128p128.o make LIBS="lib_generic/libgeneric.a common/libcommon.a board/ar7240/hw29763948p128p128/libhw29763948p128p128.a cpu/mips/libmips.a cpu/mips/ar7240/libar7240.a lib_mips/libmips.a drivers/libdrivers.a net/libnet.a rtc/librtc.a" V=1 BOOT_FROM_NAND=1 ETH_CONFIG=_s17
+$ cd tools/lsdk9.2.0.1017/rom-boot-drv
+$ make BOOT_FROM_NAND=1
+
+Then u-boot binary can be found at tools/lsdk9.2.0.1017/rom-boot-drv/2fw.bin.
+
+#
+# Compressed u-boot with LSDK
+#
+Add one line in build/scripts/db12x/config.db12x
+$ export COMPRESSED_UBOOT=1
+In LSDK tree, modify uboot_mainline in build/scripts/db12x/Makefile.db12x
+to
+$ make hw29763948p128p128_config V=1
+$ OBJS=cpu/mips/start_hw29763948p128p128.o make LIBS="lib_generic/libgeneric.a common/libcommon.a board/ar7240/hw29763948p128p128/libhw29763948p128p128.a cpu/mips/libmips.a cpu/mips/ar7240/libar7240.a lib_mips/libmips.a drivers/libdrivers.a net/libnet.a rtc/librtc.a" V=1 BUILD_DIR=$(TOPDIR)/build
+$ cd build
+$ TFTPPATH=/your/tftpboot/path make BOARD_TYPE=db12x BUILD_TYPE=jffs2 NAND=-nand BOOT_FROM_NAND=1 ETH_CONFIG=_s17 uboot_mainline stage2
+
+Then compressed u-boot binary can be found at images/db12x_s17-nand/2fw.bin.
+
+#
+# Compressed u-boot without LSDK
+#
+$ export PATH="$PATH:/your/toolchain/path"
+$ UBOOT_GCC_4_3_3_EXTRA_CFLAGS="-fPIC" make hw29763948p128p128_config V=1
+$ COMPRESSED_UBOOT=1 UBOOT_GCC_4_3_3_EXTRA_CFLAGS="-fPIC" OBJS=cpu/mips/start_hw29763948p128p128.o make LIBS="lib_generic/libgeneric.a common/libcommon.a board/ar7240/hw29763948p128p128/libhw29763948p128p128.a cpu/mips/libmips.a cpu/mips/ar7240/libar7240.a lib_mips/libmips.a drivers/libdrivers.a net/libnet.a rtc/librtc.a" V=1 BOOT_FROM_NAND=1 ETH_CONFIG=_s17
+$ cd tools/lsdk9.2.0.1017/rom-boot-drv
+$ make BOOT_FROM_NAND=1
+$ ./mk2stage -2 ../../../tuboot.bin
+
+Then compressed u-boot binary can be found at tools/lsdk9.2.0.1017/rom-boot-drv/2fw.bin.
+
+Steps to load boot code into WNDR3700v4 via BDI 3000:
+====================================
+When BDI and WNDR3700v4 are both up and running.
+Enter the following command under BDI telnet console to load boot code into WNDR3700v4.
+
+1.
+Core#0> reset
+
+2.
+Core#0> load 0x80200000 2fw-4bit-ecc.bin bin
+or
+Core#0> load 0x80200000 2fw-4bit-ecc-with-xLNA.bin bin
+
+3.
+Core#0> load 0xa1000000 db120_nand_burn_40.bin bin
+or
+Core#0> load 0xa1000000 u-boot-hw29763948p128p123-dni29-v0.9.bin bin
+
+4.
+Core#0> go
+
+Steps to upgrade u-boot via console:
+====================================
+
+In the meantime, u-boot takes 8 erase blocks (8*0x10000):
+4 code blocks plus 4 env block.
+
+ar7240> loady 0x80060000
+ar7240> crc32 0x80060000 ${filesize}
+ar7240> nand erase 0x0 0x80000
+ar7240> nand write 0x80060000 0x0 ${filesize}
+ar7240> reset

@@ -1,0 +1,57 @@
+#!/bin/sh
+
+CONFIG=/bin/config
+ttl=1
+
+rm -f /tmp/traceroute_list
+traceroute -I www.netgear.com > /tmp/traceroute_list &
+sleep 25
+
+killall traceroute
+sleep 2
+
+while read line
+do
+        ttl=`echo $line | awk -F " " '{print $1}'`
+        local ip=`echo $line | awk -F " " '{print $2}'`
+        local ip_1=`echo $ip | awk -F "." '{print $1}'`
+        case "$ip_1" in
+                10)
+                        echo "10* Lan IP address, next!"
+                        ;;
+                192)
+                        echo "192* Lan IP address, next!"
+                         ;;
+                172)
+                        local ip_2=`echo $ip | awk -F "." '{print $2}'`
+                        if [ $ip_2 -ge 16 -a $ip_2 -le 31 ]; then
+                                echo "172* Lan IP address, next!"
+                        else
+                                break;
+                        fi
+                        ;;
+                *)
+                        break;
+                        ;;
+        esac
+done</tmp/traceroute_list
+
+local proto=$($CONFIG get wan_proto)
+case "$proto" in
+        pppoe)
+                local mtu=$($CONFIG get wan_pppoe_mtu)
+                ;;
+        pptp)
+                local mtu=$($CONFIG get wan_pptp_mtu)
+                ;;
+        mulpppoe1)
+                local mtu=$($CONFIG get wan_mulppp_mtu)
+                ;;
+        *)
+                local mtu=$($CONFIG get wan_dhcp_mtu)
+                ;;
+esac
+
+sleep 3
+traceroute -I -T $ttl www.netgear.com $mtu
+

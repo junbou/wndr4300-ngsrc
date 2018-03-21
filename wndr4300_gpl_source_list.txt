@@ -1,0 +1,244 @@
+1) List the model number. If the open source code archive applies to multiple models, list each model individually.
+
+WNDR4300
+
+2) List the version number of the firmware/software that correlates with the open source code archive.
+
+WNDR4300-V1.0.2.98
+
+7) List the main HW platform utilized such as CPU, main chipset, RF chipset, DSP, Switch IC¡­etc.
+
+Atheros AR9344+ AR9580(5GHz)+AR9344(2.4GHz)
+
+8) List the name, version, license, and modification status of the OS for the product
+
+Linux kernel, 2.6.31, GPL, Yes 
+
+9) List the name, version, license, and modification status of the boot loader for the product
+
+u-boot, 1.1.4, GPL, Yes
+
+10) List the name, version, license, and modification status of the toolchain for the product
+
+gcc, 4.3.3, GPL, No
+
+11) List the name, version, license, and modification status of the tools for the product
+
+genext2fs, 1.4rc1, GPL, No
+
+ipkg-utils, 1.7, GPL, No
+
+lzma, 432, GPL, No
+
+mtd, 20090505, GPL, No
+
+sed, 4.1.2, GPL, No
+
+squashfs, 3.0, GPL, No
+
+12) List the name, version, license, and modification status of the application modules for the product
+
+ap-mode, 1, DNI, Yes
+
+artmtd, 1, DNI, Yes
+
+ather-aquila-madwifi-11n-script, 7.1.3.29, Atheros, Yes
+
+atheros-aquila-wpa2, v0.5.9, BSD/GPL, Yes
+
+bridge-utils, 1.0.6, GPL, No
+
+datalib, 1.0, DNI, Yes
+
+detcable, 1, DNI, Yes
+
+detwan, 1.0, GPL, Yes
+
+disktype, 1.0, GPL, Yes
+
+dnibusybox, 1.4.2, GPL, Yes
+
+dnidnsmasq, 2.39, GPL, Yes
+
+dni-acl, 1, DNI, Yes
+
+dni-iproute2, 2.6.29, GPL, No
+
+dni-mtd, 5, GPL, No
+
+dni-ntpclient, 2003_194, GPL, Yes
+
+dnippp, 2.4.3, GPL, Yes
+
+dni-ripd, dni23, DNI, Yes
+
+dns-ipupdate, 2, DNI, Yes
+
+ebtables, 2.0.9, GPL, No
+
+ez-ipupdate, 3.0.10, GPL, Yes
+
+factory-tools, 1, DNI, Yes
+
+fetchpin, 1, DNI, Yes
+
+hotplug2, 199, GPL, No
+
+igmpproxy, 1, GPL, Yes
+
+ipp, 1, GPL, Yes
+
+iptables, 1.4.4, GPL, Yes
+
+led-control, 1, DNI, Yes
+
+lltd, 01, MICROSOFT WINDOWS RALLY PROGRAM LICENSE, Yes
+
+lua, 5.1.4, GPL, No
+
+minidlna, 1, GPL, Yes
+
+miniupnp, 20070127, BSD, Yes
+
+net6conf, 0.2, GPL, Yes
+
+net-cgi, 1, BSD, Yes
+
+net-disk, 1, GPL, Yes
+
+net-dump, 1, GPL, Yes
+
+net-scan, 1.0, GPL, Yes
+
+net-snmp, 1, GPL, Yes
+
+net-util, dni13, DNI, Yes
+
+net-wall, 2.0, DNI, Yes
+
+noip, 2.0, GPL, Yes
+
+phddns, 1.0.4.17314, GPL, Yes
+
+ntgrddns, 1, DNI, Yes
+
+ookla, 1, ookla, No
+
+bridge-mode, 1, DNI, Yes
+
+pot, 1.0.4,GPL, Yes
+
+ppp-nas, 1, GPL, Yes
+
+proccgi, 4, GPL, No
+
+proftpd, 1.3.3, GPL, Yes
+
+px5g, 1, GPL, Yes 
+
+radvd, 1.5, GPL, Yes
+
+realpath, 1, GPL, No
+
+samba, 3.0.24, GPL, Yes
+
+samba-scripts, 1.0.0, GPL, Yes
+
+ssmtp, 2.64, GPL, No
+
+telnetenable, dni2, GPL, Yes
+
+trafficmeter, 2.0, DNI, Yes
+
+uci, 0.7, GPL, No
+
+udev, 106, GPL, Yes
+
+udhcp, 0.9.8, GPL, Yes
+
+uhttpd, 1, Apache, Yes
+
+utelnetd, 0.1.9, GPL, Yes
+
+UFSD, 8.6, Paragon, No
+
+wide-dhcpv6, 20080615r, GPL, Yes
+
+wireless-tools, 29, GPL, Yes
+
+wlan-common, 2.5, GPL, Yes
+
+zebra, 0.95a, GPL, No
+
+13) List the name, version, license, and modification status of the library modules for the product
+
+cyassl, 1.4.0, GPL, No
+
+ffmpeg, 5.0, GPL, Yes
+
+libexif, 0.6.17, GPL, No
+
+libflac, 1.2.1, GPL, No
+
+libid3tag, 0.15.1b, GPL, No
+
+libjpeg, 6b, GPL, No
+
+libogg, 1.1.3, GPL, No
+
+libpcap, 1.0.0, GPL, No
+
+libreadline, 5.2, GPL, No
+
+libtool, 1.5.26, GPL, No
+
+libvorbis, 1.2.0, GPL, No
+
+libxml2, 2.7.2, GPL, No
+
+ncurses, 5.7, GPL, NO
+
+sqlite3, 3.6.16, GPL, No
+
+zlib, 1.2.3, GPL, Yes
+
+14) List any other relevant notes.
+
+List the name, version, license, and modification status of the application modules of the third party for the product
+
+avahi, 0.6.25, GPL, Yes
+
+db47, 4.7.25, GPL, Yes
+
+e2fsprogs, 1.39, GPL, Yes
+
+expat, 2.0.1, GPL, No
+
+gdbm, 1.8.3, GPL, No
+
+gettext, 0.17, GPL, Yes
+
+kcode, 1, Kcode, No
+
+libpng, 1.4.3, GPL, No
+
+nat2.5, 1, DNI, Yes
+
+led-extender, 1, DNI, Yes
+
+libdaemon, 0.14, GPL, No
+
+libgcrypt, 1.5.0, GPL, Yes
+
+libgpg-error, 1.10, GPL, Yes
+
+libiconv, 1.11, GPL, Yes
+
+netatalk, 2.2.1, GPL, Yes
+
+netatalk-utility, 1.0.0, GPL, No
+
+openssl, 0.9.8p, GPL, Yes
+
+readyshare, 1, Kcode, No
+

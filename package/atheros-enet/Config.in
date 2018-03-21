@@ -1,0 +1,10 @@
+# Atheros ethernet driver configuration
+
+menu "Configurations"
+
+config ATHEROS_ENET_BOARD
+	string "Board that atheros-enet embedded"
+	depends on PACKAGE_kmod-atheros-enet
+	default "db120-wndr3700v4"
+
+endmenu

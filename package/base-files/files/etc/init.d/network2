@@ -1,0 +1,40 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+RCDLINKS="2,S05"
+
+boot() {
+	setup_switch() { return 0; }
+
+	include /lib/network
+	setup_switch
+	[ -s /etc/config/wireless ] || \
+		/sbin/wifi detect > /etc/config/wireless
+	/sbin/wifi up
+}
+
+normal_start() {
+	ifup -a
+	/sbin/wifi up
+}
+
+start() {
+	if [ "${initscript##*/}" = "S05network2" ]; then
+		boot "$@"
+	else
+		normal_start "$@"
+	fi
+}
+
+restart() {
+	setup_switch() { return 0; }
+	
+	include /lib/network
+	setup_switch
+	ifup -a
+	/sbin/wifi up
+}
+
+stop() {
+	ifdown -a
+}

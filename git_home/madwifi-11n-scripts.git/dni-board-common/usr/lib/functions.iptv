@@ -1,0 +1,58 @@
+#!/bin/sh
+# check_iptv_on : if the athX is add into iptv port, return 0, else return 1
+
+CONFIG=/bin/config
+gui_region=$($CONFIG get GUI_Region)
+firmware_region=`cat /tmp/firmware_region | awk '{print $1}'`
+
+check_iptv_on()
+{
+        # check whether the current language is RU
+	if [ "$firmware_region" = "" ] || [ "$firmware_region" = "WW" ]; then
+	    if [ "$gui_region" != "Russian" ]; then
+	        return 1
+            fi
+	elif [ "$firmware_region" != "RU" ]; then
+	        return 1
+        fi
+
+        PORT=$1
+	wl_1st_iptv="$($CONFIG get wan_brig_ssid1)"
+	wl_2nd_iptv="$($CONFIG get wan_brig_ssid2)"
+	wl_guest_iptv1="$($CONFIG get wan_brig_guest_ssid1)"
+	wl_guest_iptv2="$($CONFIG get wan_brig_guest_ssid2)"
+	wlg_guest_on="$($CONFIG get wlg1_endis_guestNet)"
+	wla_guest_on="$($CONFIG get wla1_endis_guestNet)"
+
+	if [ "$wl_1st_iptv" = "0" -a "$wl_2nd_iptv" = "0" -a "$wl_guest_iptv1" = "0" -a "$wl_guest_iptv2" = "0" ]; then
+	    return 1
+	fi
+
+	# check 2.4G primary network
+	if [ "$PORT" = "ath0" ] && [ "$wl_1st_iptv" = "1" ]; then
+	    return 0
+	fi
+        # check 5G primary network
+	if [ "$PORT" = "ath1" ] && [ "$wl_2nd_iptv" = "1" ] ; then
+	    return 0
+	fi
+
+	# check Guest network
+	#if we only enable 5G Guest Network, now ath2 is 5G Gusest Network Interface.
+	if [ "$wlg_guest_on" = "0" -a "$wla_guest_on" = "1" ]; then
+	    if [ "$wl_guest_iptv2" = "1" ] && [ "$PORT" = "ath2" ]; then
+	        return 0
+	    fi
+	else
+	    # check 2.4G guest network
+	    if [ "$PORT" = "ath2" ] && [ "$wl_guest_iptv1" = "1" ]; then
+	        return 0
+	    fi
+	
+	    # check 5G primary network
+	    if [ "$PORT" = "ath3" ] && [ "$wl_guest_iptv2" = "1" ]; then
+	        return 0
+	    fi
+	fi
+	return 1
+}
